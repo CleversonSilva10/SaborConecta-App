@@ -58,4 +58,5 @@ dependencies {
     testImplementation("org.mockito:mockito-core:3.12.4")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")
     androidTestImplementation("androidx.test.espresso:espresso-contrib:3.4.0")
+    implementation ("androidx.security:security-crypto:1.1.0-alpha03")
 }

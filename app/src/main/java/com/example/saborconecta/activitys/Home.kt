@@ -62,13 +62,19 @@ class Home : AppCompatActivity() {
 
     private fun LeituraDados(binding: ActivityHomeBinding) {
         val UsuarioAtual = auth.currentUser?.uid.toString()
+        fun descriptografar(dadoCriptografado: String): String {
+            val chave = 3
+            return dadoCriptografado.map { if (it.isLetter()) (it.toInt() - chave).toChar() else it }.joinToString("")
+        }
         BD.collection("InfoUsuarios").document(UsuarioAtual)
             .addSnapshotListener { documento, error ->
                 if (documento != null) {
-                    binding.textViewUserName.text = "Bem vindo(a), " + documento.getString("Nome");
+                    val nome = descriptografar(documento.getString("Nome") ?: "")
+                    binding.textViewUserName.text = "Bem vindo(a), $nome"
                 }
             }
     }
+
 
     private fun Troca_de_Tela(next_tela: Class<*>) {
         val intent = Intent(this, next_tela)

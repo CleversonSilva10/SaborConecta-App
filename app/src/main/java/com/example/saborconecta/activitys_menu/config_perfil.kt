@@ -7,6 +7,7 @@ import com.example.saborconecta.MainActivity
 import com.example.saborconecta.R
 import com.example.saborconecta.activitys.Home
 import com.example.saborconecta.databinding.ActivityConfigPerfilBinding
+import com.example.saborconecta.databinding.ActivityHomeBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -20,7 +21,7 @@ class config_perfil : AppCompatActivity() {
         binding = ActivityConfigPerfilBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        LeituraDados(binding)
+        LeituraDados()
 
         binding.buttonAlterarSenha.setOnClickListener {
             Troca_de_Tela(AlterarSenha::class.java)
@@ -63,6 +64,28 @@ class config_perfil : AppCompatActivity() {
                     binding.textViewNome.text = documento.getString("Nome");
                     binding.textViewEmail.text = documento.getString("email")
                     binding.ClassificacaoUsuario.text = documento.getString("Classificação Usuário")
+                }
+            }
+    }
+
+
+    private fun LeituraDados() {
+        val UsuarioAtual = auth.currentUser?.uid.toString()
+
+        fun descriptografar(dadoCriptografado: String): String {
+            val chave = 3
+            return dadoCriptografado.map { if (it.isLetter()) (it.toInt() - chave).toChar() else it }.joinToString("")
+        }
+
+        BD.collection("InfoUsuarios").document(UsuarioAtual)
+            .addSnapshotListener { documento, error ->
+                if (documento != null) {
+                    val nome = descriptografar(documento.getString("Nome") ?: "")
+                    val email = descriptografar(documento.getString("email") ?: "")
+                    val Classificação_Usuário = descriptografar(documento.getString("Classificação Usuário") ?: "")
+                    binding.textViewNome.text = nome
+                    binding.textViewEmail.text = email
+                    binding.ClassificacaoUsuario.text = Classificação_Usuário
                 }
             }
     }

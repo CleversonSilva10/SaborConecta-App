@@ -29,6 +29,7 @@ class TelaCadastro : AppCompatActivity() {
         setContentView(binding.root)
 
         var Consumidor_ou_AgroFamiliar: String = ""
+        var valor = "0"
 
         binding.radioButtonConsumer.setOnClickListener {
             binding.radioButtonConsumer.isChecked = true
@@ -53,17 +54,45 @@ class TelaCadastro : AppCompatActivity() {
             startActivity(intent)
         }
 
-        binding.buttonSignUp.setOnClickListener {
-            val nome = binding.editTextName.text.toString()
-            val email = binding.editTextEmail.text.toString()
-            val senha = binding.editTextPassword.text.toString()
-            val confirme_senha = binding.editTextConfirmPassword.text.toString()
-            val telefone = binding.editTextPhone.text.toString()
-            val dataNas = binding.editTextDOB.text.toString()
+        binding.radioTermoUso.setOnCheckedChangeListener { buttonView, isChecked ->
+            valor = if (isChecked) {
+                Mensagens("Você aceitou os termos de uso", buttonView, Color.parseColor("#118DF0"))
+                "1"
+            } else {
+                Mensagens("Reeleia novamente os termos de uso", buttonView, Color.parseColor("#118DF0"))
+                "0"
+            }
+            if (valor == "0") {
+                binding.radioTermoUso.isChecked = false
+            }
+        }
 
-            novo_cadastro(it, nome, email, senha, confirme_senha, telefone, dataNas, Consumidor_ou_AgroFamiliar)
+        binding.buttonSignUp.setOnClickListener {
+            if (valor == "1") {
+                val nome = binding.editTextName.text.toString()
+                val email = binding.editTextEmail.text.toString()
+                val senha = binding.editTextPassword.text.toString()
+                val confirme_senha = binding.editTextConfirmPassword.text.toString()
+                val telefone = binding.editTextPhone.text.toString()
+                val dataNas = binding.editTextDOB.text.toString()
+                novo_cadastro(
+                    it,
+                    nome,
+                    email,
+                    senha,
+                    confirme_senha,
+                    telefone,
+                    dataNas,
+                    Consumidor_ou_AgroFamiliar, valor
+                )
+            } else {
+                Mensagens(
+                    "Para efetuar cadastro, precisa aceitar os termos de uso", it, Color.parseColor("#118DF0")
+                )
+            }
         }
     }
+
     private fun novo_cadastro(
         view: View,
         nome: String,
@@ -72,7 +101,8 @@ class TelaCadastro : AppCompatActivity() {
         confirme_senha: String,
         telefone: String,
         dataNas: String,
-        Consumidor_ou_AgroFamiliar: String
+        Consumidor_ou_AgroFamiliar: String,
+        TermoAceite: String
     ) {
         when {
             nome.isEmpty() || email.isEmpty() || senha.isEmpty() || confirme_senha.isEmpty() || telefone.isEmpty()
@@ -99,7 +129,7 @@ class TelaCadastro : AppCompatActivity() {
                 )
             }
             senha == confirme_senha -> {
-                authEmail(nome, email, senha, telefone, dataNas, Consumidor_ou_AgroFamiliar, view)
+                authEmail(nome, email, senha, telefone, dataNas, Consumidor_ou_AgroFamiliar, view, TermoAceite)
             }
         }
     }
@@ -110,13 +140,14 @@ class TelaCadastro : AppCompatActivity() {
         telefone: String,
         dataNas: String,
         Consumidor_ou_AgroFamiliar: String,
-        view: View
+        view: View,
+        TermoAceite: String
     ) {
 
         auth.createUserWithEmailAndPassword(email, senha).addOnCompleteListener {
             if (it.isSuccessful) {
                 Mensagens("Cadastro Realizado!", view, Color.parseColor("#FF4868"))
-                SalvarInfoUsuarios(nome, email, dataNas, telefone, Consumidor_ou_AgroFamiliar)
+                SalvarInfoUsuarios(nome, email, dataNas, telefone, Consumidor_ou_AgroFamiliar, TermoAceite)
                 deslogar()
                 Troca_de_Tela(MainActivity::class.java)
             }
@@ -151,18 +182,25 @@ class TelaCadastro : AppCompatActivity() {
         }
     }
 
-    private fun SalvarInfoUsuarios(nome: String, email: String, dataNas: String, telefone: String, Consumidor_ou_AgroFamiliar: String) {
+    private fun SalvarInfoUsuarios(nome: String, email: String, dataNas: String, telefone: String, Consumidor_ou_AgroFamiliar: String, TermoAceite: String) {
         val usuarioatual = auth.currentUser?.uid.toString()
 
+        fun criptografar(dado: String): String {
+            val chave = 3
+            return dado.map { if (it.isLetter()) (it.toInt() + chave).toChar() else it }.joinToString("")
+        }
+
         val dadousuario = hashMapOf(
-            "Nome" to nome,
-            "email" to email,
-            "telefone" to telefone,
-            "data de Nascimento" to dataNas,
-            "Classificação Usuário" to Consumidor_ou_AgroFamiliar
+            "Nome" to criptografar(nome),
+            "email" to criptografar(email),
+            "telefone" to criptografar(telefone),
+            "data de Nascimento" to criptografar(dataNas),
+            "Classificação Usuário" to criptografar(Consumidor_ou_AgroFamiliar),
+            "TermoAceite" to criptografar(TermoAceite)
         )
         BD.collection("InfoUsuarios").document(usuarioatual).set(dadousuario)
     }
+
 
     private fun Mensagens(mensagem: String, view: View, cor: Int) {
         val snack = Snackbar.make(view, mensagem, Snackbar.LENGTH_LONG)
